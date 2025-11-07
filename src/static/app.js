@@ -27,7 +27,13 @@ function displayActivities(activities) {
         // Generate participants list
         let participantsHtml = '';
         if (details.participants && details.participants.length > 0) {
-            const participantItems = details.participants.map(email => `<li>${email}</li>`).join('');
+            const participantItems = details.participants.map(email => 
+                `<li>
+                    <span class="participant-email">${email}</span>
+                    <button class="delete-participant-btn" onclick="unregisterParticipant('${name}', '${email}')">
+                    </button>
+                </li>`
+            ).join('');
             participantsHtml = `
                 <div class="participants-section">
                     <h5>Current Participants (${details.participants.length}/${details.max_participants}):</h5>
@@ -112,4 +118,28 @@ function showMessage(text, type) {
     setTimeout(() => {
         messageDiv.classList.add('hidden');
     }, 5000);
+}
+
+async function unregisterParticipant(activityName, email) {
+    if (!confirm(`Are you sure you want to unregister ${email} from ${activityName}?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/activities/${encodeURIComponent(activityName)}/unregister?email=${encodeURIComponent(email)}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showMessage(result.message, 'success');
+            await loadActivities(); // Refresh the activities to show updated participants
+        } else {
+            const error = await response.json();
+            showMessage(error.detail, 'error');
+        }
+    } catch (error) {
+        console.error('Error unregistering participant:', error);
+        showMessage('An error occurred while unregistering the participant.', 'error');
+    }
 }
